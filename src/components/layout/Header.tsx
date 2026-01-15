@@ -3,10 +3,17 @@ import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import { FileText, Menu, X } from "lucide-react";
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/lib/supabase";
 
 const Header = () => {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user } = useAuth();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
 
   const navLinks = [
     { href: "/dashboard", label: "Dashboard" },
@@ -36,7 +43,11 @@ const Header = () => {
                 <Button
                   variant={isActive(link.href) ? "secondary" : "ghost"}
                   size="sm"
-                  className={isActive(link.href) ? "bg-accent text-accent-foreground" : ""}
+                  className={
+                    isActive(link.href)
+                      ? "bg-accent text-accent-foreground"
+                      : ""
+                  }
                 >
                   {link.label}
                 </Button>
@@ -46,16 +57,35 @@ const Header = () => {
 
           <div className="hidden md:flex items-center gap-2">
             <ThemeToggle />
-            <Link to="/login">
-              <Button variant="ghost" size="sm">
-                Sign In
-              </Button>
-            </Link>
-            <Link to="/create-resume">
-              <Button size="sm">
-                Get Started
-              </Button>
-            </Link>
+
+            {!user ? (
+              <>
+                <Link to="/login">
+                  <Button variant="ghost" size="sm">
+                    Sign In
+                  </Button>
+                </Link>
+                <Link to="/create-resume">
+                  <Button size="sm">Get Started</Button>
+                </Link>
+              </>
+            ) : (
+              <>
+                {/* User Avatar */}
+                <div className="flex items-center gap-2 px-2 py-1 rounded-full bg-accent/40">
+                  <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold">
+                    {user.email?.[0].toUpperCase()}
+                  </div>
+                  <span className="text-sm max-w-[120px] truncate">
+                    {user.email}
+                  </span>
+                </div>
+
+                <Button variant="outline" size="sm" onClick={handleLogout}>
+                  Logout
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Toggle */}
@@ -66,7 +96,11 @@ const Header = () => {
               size="icon"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
-              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              {mobileMenuOpen ? (
+                <X className="h-5 w-5" />
+              ) : (
+                <Menu className="h-5 w-5" />
+              )}
             </Button>
           </div>
         </div>
@@ -77,7 +111,11 @@ const Header = () => {
         <div className="md:hidden mx-4 mt-2 rounded-2xl border border-border/50 bg-card/95 backdrop-blur-xl animate-slide-up shadow-elevated">
           <nav className="p-4 flex flex-col gap-2">
             {navLinks.map((link) => (
-              <Link key={link.href} to={link.href} onClick={() => setMobileMenuOpen(false)}>
+              <Link
+                key={link.href}
+                to={link.href}
+                onClick={() => setMobileMenuOpen(false)}
+              >
                 <Button
                   variant={isActive(link.href) ? "secondary" : "ghost"}
                   className="w-full justify-start"
@@ -87,16 +125,26 @@ const Header = () => {
               </Link>
             ))}
             <div className="flex gap-2 mt-2 pt-2 border-t border-border/40">
-              <Link to="/login" className="flex-1" onClick={() => setMobileMenuOpen(false)}>
-                <Button variant="outline" className="w-full">
-                  Sign In
+              {!user ? (
+                <>
+                  <Link to="/login" className="flex-1">
+                    <Button variant="outline" className="w-full">
+                      Sign In
+                    </Button>
+                  </Link>
+                  <Link to="/create-resume" className="flex-1">
+                    <Button className="w-full">Get Started</Button>
+                  </Link>
+                </>
+              ) : (
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleLogout}
+                >
+                  Logout
                 </Button>
-              </Link>
-              <Link to="/create-resume" className="flex-1" onClick={() => setMobileMenuOpen(false)}>
-                <Button className="w-full">
-                  Get Started
-                </Button>
-              </Link>
+              )}
             </div>
           </nav>
         </div>
