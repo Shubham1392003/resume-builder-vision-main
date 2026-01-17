@@ -2,56 +2,66 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import Layout from "@/components/layout/Layout";
 import ScrollReveal from "@/components/ui/ScrollReveal";
-import { 
-  FileText, 
-  Target, 
-  Sparkles, 
-  ArrowRight, 
+import { useAuth } from "@/hooks/useAuth";
+
+import {
+  FileText,
+  Target,
+  Sparkles,
+  ArrowRight,
   CheckCircle2,
   Zap,
   Shield,
 } from "lucide-react";
 
 const Index = () => {
+  const { user } = useAuth();
+
   const features = [
     {
       icon: Target,
       title: "Job-Targeted",
-      description: "Automatically tailors your resume to match specific job descriptions and requirements."
+      description:
+        "Automatically tailors your resume to match specific job descriptions and requirements.",
     },
     {
       icon: Sparkles,
       title: "AI-Powered",
-      description: "Leverages advanced AI to optimize keywords, formatting, and content for ATS systems."
+      description:
+        "Leverages advanced AI to optimize keywords, formatting, and content for ATS systems.",
     },
     {
       icon: Zap,
       title: "Lightning Fast",
-      description: "Generate a professional, targeted resume in minutes, not hours."
+      description:
+        "Generate a professional, targeted resume in minutes, not hours.",
     },
     {
       icon: Shield,
       title: "ATS Friendly",
-      description: "Designed to pass Applicant Tracking Systems and reach human recruiters."
-    }
+      description:
+        "Designed to pass Applicant Tracking Systems and reach human recruiters.",
+    },
   ];
 
   const steps = [
     {
       number: "01",
       title: "Fill Your Details",
-      description: "Enter your experience, skills, and education in our intuitive form."
+      description:
+        "Enter your experience, skills, and education in our intuitive form.",
     },
     {
       number: "02",
       title: "Paste Job Description",
-      description: "Copy and paste the job listing you're targeting."
+      description: "Copy and paste the job listing you're targeting.",
     },
     {
       number: "03",
       title: "Get Your Resume",
-      description: "Receive an AI-optimized resume tailored to that specific role."
-    }
+      description:
+        "Receive an AI-optimized resume tailored to that specific role.",
+    },
   ];
 
   return (
@@ -67,18 +77,20 @@ const Index = () => {
                 Resume Builder
               </div>
             </ScrollReveal>
-            
+
             <ScrollReveal animation="fade-up" delay={150}>
               <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6">
-                <span className="text-gradient italic">Transform Your Career</span>
+                <span className="text-gradient italic">
+                  Transform Your Career
+                </span>
                 <span className="block mt-2">Into Perfect Resumes</span>
               </h1>
             </ScrollReveal>
-            
+
             <ScrollReveal animation="fade-up" delay={300}>
               <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-                The intelligent layer between you and your dream job. Compatible with all 
-                major job boards and ATS systems.
+                The intelligent layer between you and your dream job. Compatible
+                with all major job boards and ATS systems.
               </p>
             </ScrollReveal>
 
@@ -90,11 +102,17 @@ const Index = () => {
                     <ArrowRight className="h-5 w-5" />
                   </Button>
                 </Link>
-                <Link to="/login">
-                  <Button variant="hero-outline" size="xl" className="w-full sm:w-auto">
-                    Sign In
-                  </Button>
-                </Link>
+                {!user && (
+                  <Link to="/login">
+                    <Button
+                      variant="hero-outline"
+                      size="xl"
+                      className="w-full sm:w-auto"
+                    >
+                      Sign In
+                    </Button>
+                  </Link>
+                )}
               </div>
             </ScrollReveal>
 
@@ -127,15 +145,16 @@ const Index = () => {
                 Powerful Features
               </h2>
               <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-                Everything you need to create the perfect resume for any job application
+                Everything you need to create the perfect resume for any job
+                application
               </p>
             </div>
           </ScrollReveal>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {features.map((feature, index) => (
-              <ScrollReveal 
-                key={feature.title} 
+              <ScrollReveal
+                key={feature.title}
                 animation={index % 2 === 0 ? "fade-left" : "fade-right"}
                 delay={index * 150}
               >
@@ -143,8 +162,12 @@ const Index = () => {
                   <div className="h-12 w-12 rounded-xl bg-accent flex items-center justify-center mb-4 group-hover:bg-primary group-hover:shadow-glow transition-all duration-500">
                     <feature.icon className="h-6 w-6 text-accent-foreground group-hover:text-primary-foreground transition-colors duration-500" />
                   </div>
-                  <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
-                  <p className="text-muted-foreground text-sm">{feature.description}</p>
+                  <h3 className="text-lg font-semibold mb-2">
+                    {feature.title}
+                  </h3>
+                  <p className="text-muted-foreground text-sm">
+                    {feature.description}
+                  </p>
                 </div>
               </ScrollReveal>
             ))}
@@ -168,9 +191,9 @@ const Index = () => {
 
           <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
             {steps.map((step, index) => (
-              <ScrollReveal 
-                key={step.number} 
-                animation="fade-up" 
+              <ScrollReveal
+                key={step.number}
+                animation="fade-up"
                 delay={index * 200}
                 duration={1000}
               >
@@ -209,7 +232,8 @@ const Index = () => {
               </ScrollReveal>
               <ScrollReveal animation="fade-up" delay={550}>
                 <p className="text-muted-foreground text-lg mb-8">
-                  Join thousands of job seekers who've landed interviews with AI-optimized resumes.
+                  Join thousands of job seekers who've landed interviews with
+                  AI-optimized resumes.
                 </p>
               </ScrollReveal>
               <ScrollReveal animation="scale" delay={700}>
