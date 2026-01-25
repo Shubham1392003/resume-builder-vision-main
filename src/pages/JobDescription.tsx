@@ -1,21 +1,29 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/hooks/useAuth";
+
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import Layout from "@/components/layout/Layout";
-import { 
-  Target, 
-  Sparkles, 
-  ArrowRight, 
+
+import {
+  Target,
+  Sparkles,
+  ArrowRight,
   ClipboardPaste,
   Briefcase,
   Building2,
-  MapPin
+  MapPin,
 } from "lucide-react";
 
 const JobDescription = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [saving, setSaving] = useState(false);
+
   const [jobDetails, setJobDetails] = useState({
     title: "",
     company: "",
@@ -27,9 +35,38 @@ const JobDescription = () => {
     try {
       const text = await navigator.clipboard.readText();
       setJobDetails({ ...jobDetails, description: text });
-    } catch (err) {
+    } catch {
       console.error("Failed to read clipboard");
     }
+  };
+
+  // ✅ STAGE 2: SAVE JOB DESCRIPTION ONLY
+  const saveJobDescription = async () => {
+    if (!user || !jobDetails.description.trim()) {
+      alert("Job description is required");
+      return;
+    }
+
+    setSaving(true);
+
+    const { error } = await supabase.from("job_descriptions").insert({
+      user_id: user.id,
+      title: jobDetails.title,
+      company: jobDetails.company,
+      location: jobDetails.location,
+      description: jobDetails.description,
+    });
+
+    setSaving(false);
+
+    if (error) {
+      console.error("Failed to save job description:", error);
+      alert("Failed to save job description");
+      return;
+    }
+
+    // 🚀 Stage 3 will use this data
+    navigate("/preview");
   };
 
   return (
@@ -46,7 +83,8 @@ const JobDescription = () => {
               Paste Your Target Job
             </h1>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Our AI will analyze the job description and optimize your resume for maximum impact
+              Our AI will analyze the job description and optimize your resume
+              for maximum impact
             </p>
           </div>
 
@@ -66,11 +104,20 @@ const JobDescription = () => {
                         id="title"
                         placeholder="Senior Software Engineer"
                         value={jobDetails.title}
-                        onChange={(e) => setJobDetails({...jobDetails, title: e.target.value})}
+                        onChange={(e) =>
+                          setJobDetails({
+                            ...jobDetails,
+                            title: e.target.value,
+                          })
+                        }
                       />
                     </div>
+
                     <div className="space-y-2">
-                      <Label htmlFor="company" className="flex items-center gap-2">
+                      <Label
+                        htmlFor="company"
+                        className="flex items-center gap-2"
+                      >
                         <Building2 className="h-4 w-4 text-muted-foreground" />
                         Company
                       </Label>
@@ -78,13 +125,21 @@ const JobDescription = () => {
                         id="company"
                         placeholder="Google, Meta, etc."
                         value={jobDetails.company}
-                        onChange={(e) => setJobDetails({...jobDetails, company: e.target.value})}
+                        onChange={(e) =>
+                          setJobDetails({
+                            ...jobDetails,
+                            company: e.target.value,
+                          })
+                        }
                       />
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="location" className="flex items-center gap-2">
+                    <Label
+                      htmlFor="location"
+                      className="flex items-center gap-2"
+                    >
                       <MapPin className="h-4 w-4 text-muted-foreground" />
                       Location
                     </Label>
@@ -92,14 +147,21 @@ const JobDescription = () => {
                       id="location"
                       placeholder="San Francisco, CA / Remote"
                       value={jobDetails.location}
-                      onChange={(e) => setJobDetails({...jobDetails, location: e.target.value})}
+                      onChange={(e) =>
+                        setJobDetails({
+                          ...jobDetails,
+                          location: e.target.value,
+                        })
+                      }
                     />
                   </div>
 
                   {/* Job Description */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="description">Job Description *</Label>
+                      <Label htmlFor="description">
+                        Job Description *
+                      </Label>
                       <Button
                         type="button"
                         variant="ghost"
@@ -111,6 +173,7 @@ const JobDescription = () => {
                         Paste from clipboard
                       </Button>
                     </div>
+
                     <Textarea
                       id="description"
                       placeholder="Paste the full job description here...
@@ -118,25 +181,36 @@ const JobDescription = () => {
 Include requirements, responsibilities, and qualifications for best results."
                       className="min-h-[300px] font-mono text-sm"
                       value={jobDetails.description}
-                      onChange={(e) => setJobDetails({...jobDetails, description: e.target.value})}
+                      onChange={(e) =>
+                        setJobDetails({
+                          ...jobDetails,
+                          description: e.target.value,
+                        })
+                      }
                     />
+
                     <p className="text-sm text-muted-foreground">
-                      The more detailed the job description, the better we can optimize your resume.
+                      The more detailed the job description, the better we can
+                      optimize your resume.
                     </p>
                   </div>
 
-                  <Link to="/preview" className="block">
-                    <Button size="lg" className="w-full">
-                      <Sparkles className="h-5 w-5 mr-2" />
-                      Generate Targeted Resume
-                      <ArrowRight className="h-5 w-5 ml-2" />
-                    </Button>
-                  </Link>
+                  {/* ✅ BUTTON LOGIC ONLY CHANGED */}
+                  <Button
+                    size="lg"
+                    className="w-full"
+                    onClick={saveJobDescription}
+                    disabled={saving}
+                  >
+                    <Sparkles className="h-5 w-5 mr-2" />
+                    Generate Targeted Resume
+                    <ArrowRight className="h-5 w-5 ml-2" />
+                  </Button>
                 </div>
               </div>
             </div>
 
-            {/* Tips Section */}
+            {/* Tips Section (UNCHANGED) */}
             <div className="md:col-span-2">
               <div className="sticky top-24">
                 <div className="bg-accent/50 rounded-2xl p-6 border border-primary/10">
