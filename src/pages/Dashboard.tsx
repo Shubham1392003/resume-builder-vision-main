@@ -194,7 +194,7 @@ const Dashboard = () => {
                   </div>
 
                   <Link
-                    to={`/preview?id=${resume.id}`}
+                    to={`/preview?resumeId=${resume.id}`}
                     className="mt-4 block"
                   >
                     <Button variant="secondary" size="sm" className="w-full">

@@ -1,3 +1,5 @@
+import { generateResumeLatex } from "./latex/generateResumeLatex.js";
+
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -8,12 +10,26 @@ import { exec } from "child_process";
 
 dotenv.config();
 
-/* ---------------- APP SETUP ---------------- */
+/* ================= HELPERS ================= */
+const escapeLatex = (text = "") =>
+  String(text)
+    .replace(/\\/g, "\\textbackslash{}")
+    .replace(/&/g, "\\&")
+    .replace(/%/g, "\\%")
+    .replace(/\$/g, "\\$")
+    .replace(/#/g, "\\#")
+    .replace(/_/g, "\\_")
+    .replace(/{/g, "\\{")
+    .replace(/}/g, "\\}")
+    .replace(/\^/g, "\\textasciicircum{}")
+    .replace(/~/g, "\\textasciitilde{}");
+
+/* ================= APP SETUP ================= */
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-/* ---------------- SUPABASE CLIENT ---------------- */
+/* ================= SUPABASE ================= */
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -21,17 +37,14 @@ const supabase = createClient(
 
 /* =====================================================
    POST /generate-latex
-   body: { resume_id }
    ===================================================== */
 app.post("/generate-latex", async (req, res) => {
   try {
     const { resume_id } = req.body;
-
     if (!resume_id) {
       return res.status(400).json({ error: "resume_id required" });
     }
 
-    // 1️⃣ Fetch resume data
     const { data: resume, error } = await supabase
       .from("resumes")
       .select("*")
@@ -42,147 +55,131 @@ app.post("/generate-latex", async (req, res) => {
       return res.status(404).json({ error: "Resume not found" });
     }
 
-    const { personal_info, experience, education, skills } = resume;
+    // ✅ Generate LaTeX using function
+    const latex = generateResumeLatex(resume);
 
-    // 2️⃣ Generate LaTeX
-    const latex = `
-\\documentclass[11pt]{article}
-\\usepackage[a4paper,margin=1in]{geometry}
-\\usepackage{enumitem}
-\\setlist[itemize]{noitemsep, topsep=0pt}
-\\begin{document}
-
-\\begin{center}
-  {\\LARGE \\textbf{${personal_info.fullName}}} \\\\
-  ${personal_info.email} | ${personal_info.phone}
-\\end{center}
-
-\\section*{Summary}
-${personal_info.summary}
-
-\\section*{Skills}
-${skills}
-
-\\section*{Experience}
-${(experience || [])
-  .map(
-    (exp) => `
-\\textbf{${exp.position}} — ${exp.company} \\\\
-${exp.startDate} -- ${exp.endDate}
-\\begin{itemize}
-${exp.description
-  .split("\n")
-  .map((d) => `\\item ${d}`)
-  .join("\n")}
-\\end{itemize}
-`
-  )
-  .join("\n")}
-
-\\section*{Education}
-${(education || [])
-  .map(
-    (edu) => `
-\\textbf{${edu.degree}} in ${edu.field} \\\\
-${edu.institution} (${edu.graduationDate})
-`
-  )
-  .join("\n")}
-
-\\end{document}
-`;
-
-    // 3️⃣ Save LaTeX in DB
-    const { data: updated, error: updateError } = await supabase
+    // ✅ Save to DB
+    await supabase
       .from("resumes")
       .update({ latex })
-      .eq("id", resume_id)
-      .select();
+      .eq("id", resume_id);
 
-    if (updateError) {
-      return res.status(500).json({ error: updateError.message });
-    }
-
-    if (!updated || updated.length === 0) {
-      return res
-        .status(404)
-        .json({ error: "Resume update failed (no rows affected)" });
-    }
-
-    // 4️⃣ Done
-    res.json({
-      success: true,
-      resume_id,
-    });
+    res.json({ success: true });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "LaTeX generation failed" });
   }
 });
 
+
 /* =====================================================
-   POST /generate-pdf
-   body: { resume_id }
+   GET /generate-pdf/:resume_id
+   (GENERATE → UPLOAD → CACHE → REDIRECT)
    ===================================================== */
-app.post("/generate-pdf", async (req, res) => {
+app.get("/generate-pdf/:resume_id", async (req, res) => {
   try {
-    const { resume_id } = req.body;
+    const { resume_id } = req.params;
 
-    if (!resume_id) {
-      return res.status(400).json({ error: "resume_id required" });
-    }
-
-    // 1️⃣ Fetch LaTeX
-    const { data: resume, error } = await supabase
+    // 1️⃣ Fetch resume
+    let { data: resume, error } = await supabase
       .from("resumes")
-      .select("latex")
+      .select("latex, pdf_url")
       .eq("id", resume_id)
       .single();
 
-    if (error || !resume?.latex) {
-      return res.status(404).json({ error: "LaTeX not found" });
+    if (error || !resume) {
+      return res.status(404).send("Resume not found");
     }
 
-    // 2️⃣ Paths
+    // 2️⃣ If PDF already exists → redirect
+    if (resume.pdf_url) {
+      return res.redirect(resume.pdf_url);
+    }
+
+    // 3️⃣ Generate LaTeX if missing
+    if (!resume.latex) {
+      await fetch("http://localhost:5000/generate-latex", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resume_id }),
+      });
+
+      const retry = await supabase
+        .from("resumes")
+        .select("latex")
+        .eq("id", resume_id)
+        .single();
+
+      if (!retry.data?.latex) {
+        return res.status(500).send("LaTeX generation failed");
+      }
+
+      resume.latex = retry.data.latex;
+    }
+
+    // 4️⃣ Prepare temp folders
     const texDir = path.join(process.cwd(), "tmp/tex");
     const pdfDir = path.join(process.cwd(), "tmp/pdf");
-
-    if (!fs.existsSync(texDir)) fs.mkdirSync(texDir, { recursive: true });
-    if (!fs.existsSync(pdfDir)) fs.mkdirSync(pdfDir, { recursive: true });
+    fs.mkdirSync(texDir, { recursive: true });
+    fs.mkdirSync(pdfDir, { recursive: true });
 
     const texPath = path.join(texDir, `${resume_id}.tex`);
     const pdfPath = path.join(pdfDir, `${resume_id}.pdf`);
 
-    // 3️⃣ Write .tex
     fs.writeFileSync(texPath, resume.latex);
 
-    // 4️⃣ Run pdflatex
-exec(
-  `pdflatex -interaction=nonstopmode -output-directory="${pdfDir}" "${texPath}"`,
-  (error, stdout, stderr) => {
-    // 👇 If PDF exists, treat as success
-    if (fs.existsSync(pdfPath)) {
-      return res.sendFile(pdfPath);
-    }
+    // 5️⃣ Run pdflatex
+    exec(
+      `pdflatex -interaction=nonstopmode -output-directory="${pdfDir}" "${texPath}"`,
+      async () => {
+        if (!fs.existsSync(pdfPath)) {
+          return res.status(500).send("PDF generation failed");
+        }
 
-    console.error("LaTeX error:", error);
-    console.error(stderr);
-    return res.status(500).json({ error: "PDF generation failed" });
-  }
-);
+        // 6️⃣ Upload to Supabase Storage
+        const pdfBuffer = fs.readFileSync(pdfPath);
 
+        const { error: uploadError } = await supabase.storage
+          .from("resume-pdfs")
+          .upload(`${resume_id}.pdf`, pdfBuffer, {
+            contentType: "application/pdf",
+            upsert: true,
+          });
+
+        if (uploadError) {
+          console.error(uploadError);
+          return res.status(500).send("PDF upload failed");
+        }
+
+        // 7️⃣ Get public URL
+        const { data } = supabase.storage
+          .from("resume-pdfs")
+          .getPublicUrl(`${resume_id}.pdf`);
+
+        // 8️⃣ Save URL in DB
+        await supabase
+          .from("resumes")
+          .update({ pdf_url: data.publicUrl })
+          .eq("id", resume_id);
+
+        // 9️⃣ Cleanup temp files
+        fs.unlinkSync(texPath);
+        fs.unlinkSync(pdfPath);
+
+        // 🔁 Redirect browser to PDF
+        return res.redirect(data.publicUrl);
+      }
+    );
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).send("Internal server error");
   }
 });
 
-/* ---------------- HEALTH CHECK ---------------- */
-app.get("/", (req, res) => {
-  res.send("Backend running 🚀");
-});
+/* ================= HEALTH ================= */
+app.get("/", (_, res) => res.send("Backend running 🚀"));
 
-/* ---------------- START SERVER ---------------- */
+/* ================= START ================= */
 app.listen(5000, () => {
   console.log("🚀 Backend running on http://localhost:5000");
 });

@@ -5,6 +5,9 @@ import * as pdfjsLib from "pdfjs-dist";
 import pdfWorker from "pdfjs-dist/build/pdf.worker?worker";
 import mammoth from "mammoth";
 
+import { useNavigate } from "react-router-dom";
+
+
 pdfjsLib.GlobalWorkerOptions.workerPort = new pdfWorker();
 
 import { useState } from "react";
@@ -44,28 +47,34 @@ interface Education {
 }
 
 const CreateResume = () => {
+const navigate = useNavigate();
 const saveResumeToDB = async () => {
   if (!user) {
     alert("Not logged in");
-    return;
+    return null;
   }
 
-  const { error } = await supabase.from("resumes").insert({
-    user_id: user.id,
-    title: "My Resume",
-    personal_info: personalInfo,   // ✅ jsonb
-    experience: experiences,       // ✅ jsonb
-    education: education,           // ✅ jsonb
-    skills: skills,                 // ✅ text
-  });
+  const { data, error } = await supabase
+    .from("resumes")
+    .insert({
+      user_id: user.id,
+      title: "My Resume",
+      personal_info: personalInfo,
+      experience: experiences,
+      education: education,
+      skills: skills,
+    })
+    .select("id") // 👈 IMPORTANT
+    .single();
 
   if (error) {
     console.error("Resume save failed:", error);
     alert("Resume save failed");
-    return;
+    return null;
   }
 
-  alert("Resume saved successfully ✅");
+  console.log("Resume saved with ID:", data.id);
+  return data.id; // 👈 RETURN resume_id
 };
 
 
@@ -766,14 +775,19 @@ const saveResumeToDB = async () => {
                 </Button>
               ) : (
                 <div className="flex gap-3">
-                  <Button onClick={saveResumeToDB}>Save Resume</Button>
+                  <Button
+                    onClick={async () => {
+                      const resumeId = await saveResumeToDB();
+                      if (!resumeId) return;
 
-                  <Link to="/job-description">
-                    <Button variant="default">
-                      Continue to Job Match
-                      <ArrowRight className="h-4 w-4 ml-2" />
-                    </Button>
-                  </Link>
+                      // ✅ Navigate ONLY after save
+                      navigate(`/job-description?resumeId=${resumeId}`);
+
+                    }}
+                  >
+                    Save & Continue to Job Match
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
                 </div>
               )}
             </div>

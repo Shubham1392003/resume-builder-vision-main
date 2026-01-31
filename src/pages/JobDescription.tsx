@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate,useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
+
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,6 +21,29 @@ import {
 } from "lucide-react";
 
 const JobDescription = () => {
+  const [searchParams] = useSearchParams();
+  const resumeId = searchParams.get("resumeId");
+  console.log("Resume ID from URL:", resumeId);
+
+  if (!resumeId) {
+  return (
+    <Layout hideFooter>
+      <div className="container py-20 text-center">
+        <h2 className="text-2xl font-bold mb-3">
+          Resume not found
+        </h2>
+        <p className="text-muted-foreground mb-6">
+          Please create a resume first.
+        </p>
+        <Link to="/create-resume">
+          <Button>Create Resume</Button>
+        </Link>
+      </div>
+    </Layout>
+  );
+}
+
+
   const { user } = useAuth();
   const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
@@ -51,11 +75,17 @@ const JobDescription = () => {
 
     const { error } = await supabase.from("job_descriptions").insert({
       user_id: user.id,
+      resume_id: resumeId,
       title: jobDetails.title,
       company: jobDetails.company,
       location: jobDetails.location,
       description: jobDetails.description,
     });
+    if (!resumeId) {
+  alert("Resume ID missing. Please create resume again.");
+  return;
+}
+
 
     setSaving(false);
 
@@ -66,7 +96,7 @@ const JobDescription = () => {
     }
 
     // 🚀 Stage 3 will use this data
-    navigate("/preview");
+    navigate(`/preview?resumeId=${resumeId}`);
   };
 
   return (
