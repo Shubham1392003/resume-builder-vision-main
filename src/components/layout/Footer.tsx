@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { FileText, Globe, Github } from "lucide-react";
+import { FileText, Globe, Github, Instagram } from "lucide-react";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 
 const Footer = () => {
@@ -58,6 +58,17 @@ const Footer = () => {
                   >
                     <Github className="h-4 w-4" />
                     GitHub Repo
+                  </a>
+                </li>
+                <li>
+                  <a 
+                    href="https://www.instagram.com/shubham.x003/" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="hover:text-foreground transition-colors flex items-center gap-2"
+                  >
+                    <Instagram className="h-4 w-4" />
+                    Instagram
                   </a>
                 </li>
               </ul>
