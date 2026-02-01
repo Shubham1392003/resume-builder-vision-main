@@ -1,4 +1,4 @@
-FROM node:18
+FROM node:18-slim
 
 # Install LaTeX and required packages
 RUN apt-get update && apt-get install -y \
