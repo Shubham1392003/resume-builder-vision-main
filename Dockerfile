@@ -1,4 +1,4 @@
-FROM node:18
+FROM node:18-slim
 
 # Install LaTeX and required packages
 RUN apt-get update && apt-get install -y \
@@ -8,20 +8,17 @@ RUN apt-get update && apt-get install -y \
     texlive-fonts-extra \
     && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy package files from the backend subdirectory
+COPY backend/package*.json ./
 
-# Install dependencies
 RUN npm install
 
-# Copy application code
-COPY . .
+# Copy the rest of the backend files
+COPY backend/ .
 
-# Expose port
 EXPOSE 10000
 
-# Start the server
+# Ensure the server starts correctly
 CMD ["node", "server.js"]
