@@ -20,7 +20,9 @@ import {
   MapPin,
 } from "lucide-react";
 
+
 const JobDescription = () => {
+  
   const [searchParams] = useSearchParams();
   const resumeId = searchParams.get("resumeId");
   console.log("Resume ID from URL:", resumeId);

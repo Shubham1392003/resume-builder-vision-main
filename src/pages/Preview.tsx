@@ -20,7 +20,8 @@ const Preview = () => {
     );
   }
 
-  const pdfUrl = `http://localhost:5000/generate-pdf/${resumeId}`;
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+  const pdfUrl = `${BACKEND_URL}/generate-pdf/${resumeId}`;
 
   return (
     <Layout hideFooter>

@@ -27,7 +27,14 @@ const escapeLatex = (text = "") =>
 
 /* ================= APP SETUP ================= */
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'https://resume-builder-frontend.onrender.com',  // Add your Render frontend URL
+    process.env.FRONTEND_URL  // Allow dynamic frontend URL from env
+  ].filter(Boolean),
+  credentials: true
+}));
 app.use(express.json());
 
 /* ================= SUPABASE ================= */

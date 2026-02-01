@@ -146,10 +146,10 @@ const Dashboard = () => {
     }
   };
 
-  const handleDownload = (id: string) => {
-    // Redirect to backend PDF generator
-    window.location.href = `http://localhost:5000/generate-pdf/${id}`;
-  };
+const handleDownload = (id: string) => {
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+  window.location.href = `${BACKEND_URL}/generate-pdf/${id}`;
+};
 
   const statCards = [
     {
