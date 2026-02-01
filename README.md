@@ -292,6 +292,19 @@ npm run dev
 
 Visit `http://localhost:5173`
 
+### 7. Deployment (Production)
+
+#### Backend (Railway.app)
+1. Use the provided `Dockerfile` at the project root.
+2. Set the build type to **Docker**.
+3. Add environment variables: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY`.
+4. Railway will automatically expose port 10000.
+
+#### Frontend (Vercel)
+1. Connect your repository to Vercel.
+2. Add environment variable: `VITE_BACKEND_URL` (your Railway URL).
+3. Vercel will build and deploy the Vite app.
+
 ---
 
 ## 💡 Key Features Breakdown
