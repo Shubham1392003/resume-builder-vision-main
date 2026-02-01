@@ -1,4 +1,4 @@
-FROM node:18-slim
+FROM node:18
 
 # Install LaTeX and required packages
 RUN apt-get update && apt-get install -y \
@@ -10,15 +10,15 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Copy package files from the backend subdirectory
-COPY backend/package*.json ./
+# Copy package files (already in this directory since Root Directory will be 'backend')
+COPY package*.json ./
 
 RUN npm install
 
-# Copy the rest of the backend files
-COPY backend/ .
+# Copy application code
+COPY . .
 
 EXPOSE 10000
 
-# Ensure the server starts correctly
+# Start the server
 CMD ["node", "server.js"]
