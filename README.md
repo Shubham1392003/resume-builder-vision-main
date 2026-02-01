@@ -357,7 +357,7 @@ Distributed under the MIT License.
 
 <div align="center">
 
-### **Shubham Madhav Kendre**
+### **Developed & Built by Shubham Madhav Kendre**
 
 *AI/ML & Full Stack Developer*
 
