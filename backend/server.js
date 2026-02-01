@@ -290,7 +290,7 @@ app.get("/generate-pdf/:resume_id", async (req, res) => {
 app.get("/", (_, res) => res.send("Backend running 🚀"));
 
 /* ================= START ================= */
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log(`🚀 Backend running on http://localhost:${PORT}`);
 });
