@@ -195,7 +195,8 @@ app.get("/generate-pdf/:resume_id", async (req, res) => {
 
     // 3️⃣ Generate LaTeX if missing
     if (!resume.latex) {
-      await fetch("http://localhost:5000/generate-latex", {
+      const baseUrl = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+      await fetch(`${baseUrl}/generate-latex`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ resume_id }),
@@ -290,6 +291,7 @@ app.get("/generate-pdf/:resume_id", async (req, res) => {
 app.get("/", (_, res) => res.send("Backend running 🚀"));
 
 /* ================= START ================= */
-app.listen(5000, () => {
-  console.log("🚀 Backend running on http://localhost:5000");
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`🚀 Backend running on http://localhost:${PORT}`);
 });
