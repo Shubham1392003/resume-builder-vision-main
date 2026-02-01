@@ -195,8 +195,7 @@ app.get("/generate-pdf/:resume_id", async (req, res) => {
 
     // 3️⃣ Generate LaTeX if missing
     if (!resume.latex) {
-      const baseUrl = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
-      await fetch(`${baseUrl}/generate-latex`, {
+      await fetch(`http://localhost:${PORT}/generate-latex`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ resume_id }),
