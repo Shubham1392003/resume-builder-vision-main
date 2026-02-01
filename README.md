@@ -4,7 +4,7 @@
 
 ### Craft Perfect Resumes with AI-Powered Tailoring
 
-[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen?style=for-the-badge&logo=vercel)](https://your-demo-url.vercel.app/)
+[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen?style=for-the-badge&logo=vercel)](https://resume-builder-vision-main.vercel.app/)
 [![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
 [![OpenRouter](https://img.shields.io/badge/OpenRouter-AI-blue?style=for-the-badge)](https://openrouter.ai/)
 
@@ -360,13 +360,7 @@ Resumes linked to job descriptions show as:
 - [ ] 🌐 **Multi-language** - Support for multiple languages
 - [ ] 🤝 **Collaboration** - Share and get feedback on resumes
 
----
 
-## 📄 License
-
-Distributed under the MIT License.
-
----
 
 ## 👨‍💻 Author
 
