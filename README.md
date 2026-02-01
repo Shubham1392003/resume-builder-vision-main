@@ -229,6 +229,21 @@ CREATE TABLE job_descriptions (
 
 ---
 
+## 🐳 Docker Architecture
+
+This project uses **Docker** to provide a consistent and reliable environment for LaTeX PDF generation.
+
+### Why Docker?
+- **LaTeX Environment:** LaTeX requires specific system-level binaries and font packages that aren't available in standard serverless or Node.js environments.
+- **Portability:** Docker ensures the backend runs identically on local machines, Railway, or any other cloud provider.
+- **Optimized Image:** We use a `node:18-slim` base and a curated list of TeX Live packages to keep the image size small (~600MB) and build times fast.
+
+### Key Components
+- `Dockerfile`: Configures the Debian-based environment, installs `pdflatex`, and sets up the Node.js server.
+- `.dockerignore`: Ensures that local `node_modules` and temporary files don't bloat the production image.
+
+---
+
 ## 🚧 Setup & Installation
 
 ### Prerequisites
