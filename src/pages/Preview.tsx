@@ -3,10 +3,6 @@ import { Button } from "@/components/ui/button";
 import Layout from "@/components/layout/Layout";
 import {
   Download,
-  Edit,
-  Share2,
-  CheckCircle2,
-  Target,
   ArrowLeft,
 } from "lucide-react";
 
@@ -25,7 +21,6 @@ const Preview = () => {
   }
 
   const pdfUrl = `http://localhost:5000/generate-pdf/${resumeId}`;
-  const matchScore = 92;
 
   return (
     <Layout hideFooter>
@@ -35,59 +30,26 @@ const Preview = () => {
           <Link to="/dashboard">
             <Button variant="ghost" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
+              Back to Dashboard
             </Button>
           </Link>
 
-          <div className="flex items-center gap-3">
-            <div className="px-4 py-2 rounded-full bg-primary/10 text-primary">
-              <Target className="h-4 w-4 inline mr-1" />
-              {matchScore}% Job Match
-            </div>
-
-            <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
-              <Button>
-                <Download className="h-4 w-4 mr-2" />
-                Download PDF
-              </Button>
-            </a>
-          </div>
+          <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
+            <Button size="lg" className="shadow-lg">
+              <Download className="h-5 w-5 mr-2" />
+              Download PDF
+            </Button>
+          </a>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* PDF */}
-          <div className="lg:col-span-2 h-[900px] bg-white rounded-xl shadow">
+        {/* Centered Resume Preview */}
+        <div className="max-w-5xl mx-auto">
+          <div className="bg-white rounded-2xl shadow-elevated overflow-hidden border border-border/50">
             <iframe
-              src={`${pdfUrl}?t=${Date.now()}`} // cache-buster
+              src={`${pdfUrl}?t=${Date.now()}`}
               title="Resume PDF"
-              className="w-full h-full"
+              className="w-full h-[900px]"
             />
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            <div className="p-6 border rounded-xl">
-              <h3 className="font-semibold mb-4">Job Match Analysis</h3>
-
-              <div className="text-center text-3xl font-bold mb-4">
-                {matchScore}%
-              </div>
-
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-primary" />
-                  Skills aligned
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-primary" />
-                  Experience level matched
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-primary" />
-                  ATS optimized
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>

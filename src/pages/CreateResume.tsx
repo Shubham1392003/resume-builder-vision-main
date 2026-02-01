@@ -37,6 +37,19 @@ interface Experience {
   description: string;
 }
 
+interface Project {
+  id: number;
+  title: string;
+  tech: string;
+  date: string;
+  points: string[]; // Store as array of strings, UI might use textarea newline sep
+}
+
+interface Achievement {
+  id: number;
+  description: string;
+}
+
 interface Education {
   id: number;
   institution: string;
@@ -48,6 +61,33 @@ interface Education {
 
 const CreateResume = () => {
 const navigate = useNavigate();
+const [projects, setProjects] = useState<Project[]>([]);
+const [achievements, setAchievements] = useState<Achievement[]>([]);
+
+const addProject = () => {
+  setProjects([...projects, { id: Date.now(), title: "", tech: "", date: "", points: [""] }]);
+};
+
+const removeProject = (id: number) => {
+  setProjects(projects.filter(p => p.id !== id));
+};
+
+const updateProject = (id: number, field: keyof Project, value: any) => {
+  setProjects(projects.map(p => p.id === id ? { ...p, [field]: value } : p));
+};
+
+const addAchievement = () => {
+  setAchievements([...achievements, { id: Date.now(), description: "" }]);
+};
+
+const removeAchievement = (id: number) => {
+  setAchievements(achievements.filter(a => a.id !== id));
+};
+
+const updateAchievement = (id: number, value: string) => {
+  setAchievements(achievements.map(a => a.id === id ? { ...a, description: value } : a));
+};
+
 const saveResumeToDB = async () => {
   if (!user) {
     alert("Not logged in");
@@ -63,6 +103,11 @@ const saveResumeToDB = async () => {
       experience: experiences,
       education: education,
       skills: skills,
+      projects: projects,
+      achievements: achievements.map(a => a.description), // Store as array of strings in DB if schema expects that, OR object. Let's assume array of strings for simplicity or check schema. actually backend expects array of strings for achievements usually.
+      // Wait, backend `generateResumeLatex` expects `achievements` to be array of strings.
+      // My state is array of objects {id, description}.
+      // So I map it here.
     })
     .select("id") // 👈 IMPORTANT
     .single();
@@ -177,6 +222,23 @@ const saveResumeToDB = async () => {
           : exp.description || "",
       })),
     );
+
+    setProjects(
+      (data.projects || []).map((proj: any) => ({
+        id: Date.now() + Math.random(),
+        title: proj.title || "",
+        tech: proj.tech || "",
+        date: proj.date || "",
+        points: Array.isArray(proj.points) ? proj.points : (proj.points || "").split("\n"),
+      }))
+    );
+
+    setAchievements(
+        (data.achievements || []).map((ach: string) => ({
+            id: Date.now() + Math.random(),
+            description: ach
+        }))
+    );
   };
 
   const extractResumeText = async (file: File) => {
@@ -204,7 +266,7 @@ const saveResumeToDB = async () => {
   };
 
   const [step, setStep] = useState(1);
-  const totalSteps = 4;
+  const totalSteps = 6;
 
   const [personalInfo, setPersonalInfo] = useState({
     fullName: "",
@@ -307,16 +369,18 @@ const saveResumeToDB = async () => {
   const steps = [
     { number: 1, title: "Personal Info", icon: User },
     { number: 2, title: "Experience", icon: Briefcase },
-    { number: 3, title: "Education", icon: GraduationCap },
-    { number: 4, title: "Skills", icon: Award },
+    { number: 3, title: "Projects", icon: Briefcase },
+    { number: 4, title: "Education", icon: GraduationCap },
+    { number: 5, title: "Skills", icon: Award },
+    { number: 6, title: "Achievements", icon: Award },
   ];
 
   return (
     <Layout hideFooter>
       <div className="container py-8">
         {/* Progress Steps */}
-        <div className="max-w-3xl mx-auto mb-8">
-          <div className="flex items-center justify-between">
+        <div className="max-w-3xl mx-auto mb-8 overflow-x-auto pb-2">
+          <div className="flex items-center justify-between min-w-[600px]">
             {steps.map((s, index) => (
               <div key={s.number} className="flex items-center">
                 <div
@@ -616,14 +680,62 @@ const saveResumeToDB = async () => {
               </div>
             )}
 
-            {/* Step 3: Education */}
+            {/* Step 3: Projects */}
             {step === 3 && (
+                <div className="animate-fade-in">
+                    <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                        <Briefcase className="h-6 w-6 text-primary" />
+                        Projects
+                    </h2>
+                    <div className="space-y-6">
+                        {projects.map((proj, index) => (
+                            <div key={proj.id} className="p-4 rounded-xl bg-muted/50 border border-border/50">
+                                <div className="flex items-center justify-between mb-4">
+                                    <span className="font-medium">Project {index + 1}</span>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeProject(proj.id)}>
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>Project Title</Label>
+                                        <Input value={proj.title} onChange={(e) => updateProject(proj.id, "title", e.target.value)} placeholder="E.g. E-commerce App" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Technologies (comma separated)</Label>
+                                        <Input value={proj.tech} onChange={(e) => updateProject(proj.id, "tech", e.target.value)} placeholder="React, Node.js, MongoDB" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Date / Duration</Label>
+                                        <Input value={proj.date} onChange={(e) => updateProject(proj.id, "date", e.target.value)} placeholder="Jan 2024 - Mar 2024" />
+                                    </div>
+                                </div>
+                                <div className="mt-4 space-y-2">
+                                    <Label>Description (Bulleted list)</Label>
+                                    <Textarea 
+                                        value={Array.isArray(proj.points) ? proj.points.join("\n") : proj.points} 
+                                        onChange={(e) => updateProject(proj.id, "points", e.target.value.split("\n"))} 
+                                        placeholder="• Developed feature X...\n• Optimized performance..."
+                                        className="min-h-[100px]"
+                                    />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <Button variant="outline" className="mt-4 w-full" onClick={addProject}>
+                        <Plus className="h-4 w-4 mr-2" /> Add Another Project
+                    </Button>
+                </div>
+            )}
+
+            {/* Step 4: Education */}
+            {step === 4 && (
               <div className="animate-fade-in">
                 <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
                   <GraduationCap className="h-6 w-6 text-primary" />
                   Education
                 </h2>
-
+                {/* ... existing education rendering logic ... */}
                 <div className="space-y-6">
                   {education.map((edu, index) => (
                     <div
@@ -711,8 +823,8 @@ const saveResumeToDB = async () => {
               </div>
             )}
 
-            {/* Step 4: Skills */}
-            {step === 4 && (
+            {/* Step 5: Skills */}
+            {step === 5 && (
               <div className="animate-fade-in">
                 <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
                   <Award className="h-6 w-6 text-primary" />
@@ -755,6 +867,33 @@ const saveResumeToDB = async () => {
                   )}
                 </div>
               </div>
+            )}
+
+            {/* Step 6: Achievements */}
+            {step === 6 && (
+                <div className="animate-fade-in">
+                    <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                        <Award className="h-6 w-6 text-primary" />
+                        Achievements & Leadership
+                    </h2>
+                    <div className="space-y-4">
+                        {achievements.map((ach, index) => (
+                            <div key={ach.id} className="flex gap-2">
+                                <Input 
+                                    value={ach.description} 
+                                    onChange={(e) => updateAchievement(ach.id, e.target.value)} 
+                                    placeholder="Won 1st place in Hackathon..." 
+                                />
+                                <Button variant="ghost" size="icon" className="text-destructive" onClick={() => removeAchievement(ach.id)}>
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        ))}
+                        <Button variant="outline" className="w-full" onClick={addAchievement}>
+                            <Plus className="h-4 w-4 mr-2" /> Add Achievement
+                        </Button>
+                    </div>
+                </div>
             )}
 
             {/* Navigation Buttons */}

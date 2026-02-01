@@ -70,7 +70,15 @@ JSON FORMAT:
       "endDate": "",
       "description": []
     }
-  ]
+  ],
+  "projects": [
+    {
+      "title": "",
+      "tech": "",
+      "points": []
+    }
+  ],
+  "achievements": []
 }
 
 Resume Text:

@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { FileText } from "lucide-react";
+import { FileText, Globe, Github } from "lucide-react";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 
 const Footer = () => {
@@ -36,11 +36,30 @@ const Footer = () => {
 
           <ScrollReveal animation="fade-left" delay={200}>
             <div>
-              <h4 className="font-semibold mb-4">Company</h4>
+              <h4 className="font-semibold mb-4">Links</h4>
               <ul className="space-y-2 text-muted-foreground">
-                <li><Link to="/login" className="hover:text-foreground transition-colors">Sign In</Link></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Privacy</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Terms</a></li>
+                <li>
+                  <a 
+                    href="https://sk-coral.vercel.app/" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="hover:text-foreground transition-colors flex items-center gap-2"
+                  >
+                    <Globe className="h-4 w-4" />
+                    My Portfolio
+                  </a>
+                </li>
+                <li>
+                  <a 
+                    href="https://github.com/Shubham1392003/resume-builder-vision-main" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="hover:text-foreground transition-colors flex items-center gap-2"
+                  >
+                    <Github className="h-4 w-4" />
+                    GitHub Repo
+                  </a>
+                </li>
               </ul>
             </div>
           </ScrollReveal>
@@ -48,7 +67,7 @@ const Footer = () => {
 
         <ScrollReveal animation="blur" delay={300}>
           <div className="mt-12 pt-8 border-t border-border/40 text-center text-muted-foreground text-sm">
-            © {new Date().getFullYear()} ResumeAI. All rights reserved.
+            © {new Date().getFullYear()} ResumeBuilder. All rights reserved.
           </div>
         </ScrollReveal>
       </div>

@@ -24,11 +24,25 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 type Resume = {
   id: string;
   title: string | null;
   created_at: string;
+  downloads?: number;
+  job_descriptions?: Array<{
+    company: string;
+    title: string;
+  }>;
 };
 
 const Dashboard = () => {
@@ -36,36 +50,123 @@ const Dashboard = () => {
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // ✅ Fetch resumes from Supabase
+  const [refreshKey, setRefreshKey] = useState(0); // Force re-fetch
+
+  const [stats, setStats] = useState({
+    totalResumes: 0,
+    jobMatches: 0,
+    downloads: 0,
+  });
+
+  // ✅ Fetch resumes & stats from Supabase
   useEffect(() => {
     if (!user) return;
 
-    const fetchResumes = async () => {
-      const { data, error } = await supabase
+    const fetchData = async () => {
+      setLoading(true);
+
+      // 1. Fetch Resumes with Job Description data (company name)
+      const { data: resumesData, error: resumesError } = await supabase
         .from("resumes")
-        .select("id, title, created_at")
+        .select(`
+          *,
+          job_descriptions (
+            company,
+            title
+          )
+        `) 
         .order("created_at", { ascending: false });
 
-      if (error) {
-        console.error("Failed to fetch resumes:", error);
+      if (resumesError) {
+        console.error("Failed to fetch resumes:", resumesError);
       } else {
-        setResumes(data || []);
+        setResumes(resumesData || []);
       }
+
+      // 2. Fetch Job Matches (Job Descriptions count)
+      const { count: jobsCount, error: jobsError } = await supabase
+        .from("job_descriptions")
+        .select("*", { count: "exact", head: true });
+
+      if (jobsError) {
+        console.error("Failed to fetch job stats:", jobsError);
+      }
+
+      setStats({
+        totalResumes: resumesData?.length || 0,
+        jobMatches: jobsCount || 0,
+        downloads: resumesData?.reduce((sum, r) => sum + (r.downloads || 0), 0) || 0,
+      });
 
       setLoading(false);
     };
 
-    fetchResumes();
-  }, [user]);
+    fetchData();
+  }, [user, refreshKey]);
 
-  const stats = [
+  // --- ACTIONS ---
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+  const [resumeToRename, setResumeToRename] = useState<Resume | null>(null);
+  const [newName, setNewName] = useState("");
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this resume?")) return;
+
+    const { error } = await supabase.from("resumes").delete().eq("id", id);
+    if (error) {
+      alert("Failed to delete resume");
+    } else {
+      setResumes(resumes.filter((r) => r.id !== id));
+    }
+  };
+
+  const openRenameDialog = (resume: Resume) => {
+    setResumeToRename(resume);
+    setNewName(resume.title || "");
+    setRenameDialogOpen(true);
+  };
+
+  const handleRenameSave = async () => {
+    if (!resumeToRename || !newName.trim()) return;
+
+    const { error } = await supabase
+      .from("resumes")
+      .update({ title: newName })
+      .eq("id", resumeToRename.id);
+
+    if (error) {
+      alert("Failed to rename resume");
+    } else {
+      setResumes(
+        resumes.map((r) =>
+          r.id === resumeToRename.id ? { ...r, title: newName } : r
+        )
+      );
+      setRenameDialogOpen(false);
+    }
+  };
+
+  const handleDownload = (id: string) => {
+    // Redirect to backend PDF generator
+    window.location.href = `http://localhost:5000/generate-pdf/${id}`;
+  };
+
+  const statCards = [
     {
       label: "Total Resumes",
-      value: resumes.length.toString(),
+      value: stats.totalResumes.toString(),
       icon: FileText,
     },
-    { label: "Job Matches", value: "—", icon: Target },
-    { label: "Downloads", value: "—", icon: Download },
+    { 
+      label: "Job Matches", 
+      value: stats.jobMatches.toString(), 
+      icon: Target 
+    },
+    { 
+      label: "Downloads", 
+      value: stats.downloads.toString(), 
+      icon: Download 
+    },
   ];
 
   return (
@@ -91,7 +192,7 @@ const Dashboard = () => {
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          {stats.map((stat, index) => (
+          {statCards.map((stat, index) => (
             <ScrollReveal
               key={stat.label}
               animation={
@@ -168,15 +269,24 @@ const Dashboard = () => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
-                          <Eye className="h-4 w-4 mr-2" />
-                          View
+                        <DropdownMenuItem asChild>
+                          <Link to={`/preview?resumeId=${resume.id}`}>
+                            <Eye className="h-4 w-4 mr-2" />
+                            View
+                          </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleDownload(resume.id)}>
                           <Download className="h-4 w-4 mr-2" />
                           Download
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">
+                         <DropdownMenuItem onClick={() => openRenameDialog(resume)}>
+                          <FileText className="h-4 w-4 mr-2" />
+                          Rename
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-destructive"
+                          onClick={() => handleDelete(resume.id)}
+                        >
                           <Trash2 className="h-4 w-4 mr-2" />
                           Delete
                         </DropdownMenuItem>
@@ -185,7 +295,9 @@ const Dashboard = () => {
                   </div>
 
                   <h3 className="font-semibold mb-1 line-clamp-1">
-                    {resume.title || "Untitled Resume"}
+                    {resume.job_descriptions?.[0]?.company 
+                      ? `${resume.job_descriptions[0].title || 'Resume'} @ ${resume.job_descriptions[0].company}`
+                      : resume.title || "My Resume"}
                   </h3>
 
                   <div className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -207,6 +319,34 @@ const Dashboard = () => {
           </div>
         )}
       </div>
+
+      {/* Rename Dialog */}
+      <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename Resume</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Resume Name</Label>
+              <Input
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="e.g. Frontend Dev @ Google"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setRenameDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleRenameSave}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };
