@@ -55,7 +55,13 @@ const Login = () => {
 
   const navigate = useNavigate();
   const handleOAuth = async (provider: "google" | "github") => {
-    await supabase.auth.signInWithOAuth({ provider });
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: `${window.location.origin}/dashboard`,
+      },
+    });
+    if (error) setError(error.message);
   };
 
   return (
