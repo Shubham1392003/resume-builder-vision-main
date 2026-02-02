@@ -6,6 +6,7 @@ import pdfWorker from "pdfjs-dist/build/pdf.worker?worker";
 import mammoth from "mammoth";
 
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 
 pdfjsLib.GlobalWorkerOptions.workerPort = new pdfWorker();
@@ -210,17 +211,28 @@ const saveResumeToDB = async () => {
       })),
     );
 
+    const extractedExperiences = (data.experience || []).map((exp: any) => ({
+      id: Date.now() + Math.random(),
+      company: exp.company || "",
+      position: exp.position || "",
+      startDate: exp.startDate || "",
+      endDate: exp.endDate || "",
+      description: Array.isArray(exp.description)
+        ? exp.description.join("\n")
+        : exp.description || "",
+    }));
+
     setExperiences(
-      (data.experience || []).map((exp: any) => ({
-        id: Date.now() + Math.random(),
-        company: exp.company || "",
-        position: exp.position || "",
-        startDate: exp.startDate || "",
-        endDate: exp.endDate || "",
-        description: Array.isArray(exp.description)
-          ? exp.description.join("\n")
-          : exp.description || "",
-      })),
+      extractedExperiences.length > 0 
+        ? extractedExperiences 
+        : [{
+            id: Date.now(),
+            company: "",
+            position: "",
+            startDate: "",
+            endDate: "",
+            description: "",
+          }]
     );
 
     setProjects(
@@ -267,6 +279,7 @@ const saveResumeToDB = async () => {
 
   const [step, setStep] = useState(1);
   const totalSteps = 6;
+  const [showValidationErrors, setShowValidationErrors] = useState(false);
 
   const [personalInfo, setPersonalInfo] = useState({
     fullName: "",
@@ -375,6 +388,141 @@ const saveResumeToDB = async () => {
     { number: 6, title: "Achievements", icon: Award },
   ];
 
+  const showValidationToasts = (currentStep: number) => {
+    switch (currentStep) {
+      case 1:
+        if (!personalInfo.fullName.trim()) {
+          toast.error("Please enter your full name");
+          return;
+        }
+        if (!personalInfo.email.trim()) {
+          toast.error("Please enter your email");
+          return;
+        }
+        if (!personalInfo.phone.trim()) {
+          toast.error("Please enter your phone number");
+          return;
+        }
+        if (!personalInfo.location.trim()) {
+          toast.error("Please enter your location");
+          return;
+        }
+        if (!personalInfo.summary.trim()) {
+          toast.error("Please enter your professional summary");
+          return;
+        }
+        break;
+
+      case 2:
+        if (experiences.length === 0) {
+          toast.error("Please add at least one experience entry");
+          return;
+        }
+        for (const exp of experiences) {
+          if (!exp.description.trim()) {
+            toast.error("Please provide a description for all experience entries");
+            return;
+          }
+        }
+        break;
+
+      case 3:
+        for (const proj of projects) {
+          if (!proj.title.trim()) {
+            toast.error("Please provide a title for all projects");
+            return;
+          }
+          if (!proj.tech.trim()) {
+            toast.error("Please provide technologies for all projects");
+            return;
+          }
+          if (!proj.date.trim()) {
+            toast.error("Please provide a date for all projects");
+            return;
+          }
+          if (proj.points.every(p => !p.trim())) {
+            toast.error("Please provide at least one description point for all projects");
+            return;
+          }
+        }
+        break;
+
+      case 4:
+        for (const edu of education) {
+          if (!edu.institution.trim()) {
+            toast.error("Please provide an institution for all education entries");
+            return;
+          }
+          if (!edu.degree.trim()) {
+            toast.error("Please provide a degree for all education entries");
+            return;
+          }
+          if (!edu.field.trim()) {
+            toast.error("Please provide a field of study for all education entries");
+            return;
+          }
+          if (!edu.graduationDate.trim()) {
+            toast.error("Please provide a graduation date for all education entries");
+            return;
+          }
+        }
+        break;
+
+      case 5:
+        if (!skills.trim()) {
+          toast.error("Please enter your skills");
+          return;
+        }
+        break;
+
+      default:
+        break;
+    }
+  };
+
+  const isStepValid = (currentStep: number) => {
+    switch (currentStep) {
+      case 1:
+        return !!(personalInfo.fullName.trim() && 
+                 personalInfo.email.trim() && 
+                 personalInfo.phone.trim() && 
+                 personalInfo.location.trim() && 
+                 personalInfo.summary.trim());
+      case 2:
+        return experiences.length > 0 && experiences.every(exp => exp.description.trim());
+      case 3:
+        return projects.length > 0 && projects.every(proj => 
+          proj.title.trim() && 
+          proj.tech.trim() && 
+          proj.date.trim() && 
+          proj.points.some(p => p.trim())
+        );
+      case 4:
+        return education.length > 0 && education.every(edu => 
+          edu.institution.trim() && 
+          edu.degree.trim() && 
+          edu.field.trim() && 
+          edu.graduationDate.trim()
+        );
+      case 5:
+        return !!skills.trim();
+      case 6:
+        return true;
+      default:
+        return true;
+    }
+  };
+
+  const handleNext = () => {
+    if (isStepValid(step)) {
+      setStep(step + 1);
+      setShowValidationErrors(false);
+    } else {
+      showValidationToasts(step);
+      setShowValidationErrors(true);
+    }
+  };
+
   return (
     <Layout hideFooter>
       <div className="container py-8">
@@ -461,6 +609,7 @@ const saveResumeToDB = async () => {
                     <Input
                       id="fullName"
                       placeholder="John Doe"
+                      className={showValidationErrors && !personalInfo.fullName.trim() ? "border-destructive" : ""}
                       value={personalInfo.fullName}
                       onChange={(e) =>
                         setPersonalInfo({
@@ -476,6 +625,7 @@ const saveResumeToDB = async () => {
                       id="email"
                       type="email"
                       placeholder="john@example.com"
+                      className={showValidationErrors && !personalInfo.email.trim() ? "border-destructive" : ""}
                       value={personalInfo.email}
                       onChange={(e) =>
                         setPersonalInfo({
@@ -486,10 +636,11 @@ const saveResumeToDB = async () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Phone</Label>
+                    <Label htmlFor="phone">Phone *</Label>
                     <Input
                       id="phone"
                       placeholder="+1 (555) 123-4567"
+                      className={showValidationErrors && !personalInfo.phone.trim() ? "border-destructive" : ""}
                       value={personalInfo.phone}
                       onChange={(e) =>
                         setPersonalInfo({
@@ -500,10 +651,11 @@ const saveResumeToDB = async () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="location">Location</Label>
+                    <Label htmlFor="location">Location *</Label>
                     <Input
                       id="location"
                       placeholder="San Francisco, CA"
+                      className={showValidationErrors && !personalInfo.location.trim() ? "border-destructive" : ""}
                       value={personalInfo.location}
                       onChange={(e) =>
                         setPersonalInfo({
@@ -544,11 +696,11 @@ const saveResumeToDB = async () => {
                 </div>
 
                 <div className="mt-4 space-y-2">
-                  <Label htmlFor="summary">Professional Summary</Label>
+                  <Label htmlFor="summary">Professional Summary *</Label>
                   <Textarea
                     id="summary"
                     placeholder="A brief summary of your professional background and career goals..."
-                    className="min-h-[120px]"
+                    className={`min-h-[120px] ${showValidationErrors && !personalInfo.summary.trim() ? "border-destructive" : ""}`}
                     value={personalInfo.summary}
                     onChange={(e) =>
                       setPersonalInfo({
@@ -651,10 +803,10 @@ const saveResumeToDB = async () => {
                       </div>
 
                       <div className="mt-4 space-y-2">
-                        <Label>Description</Label>
+                        <Label>Description *</Label>
                         <Textarea
                           placeholder="Describe your responsibilities and achievements..."
-                          className="min-h-[100px]"
+                          className={`min-h-[100px] ${showValidationErrors && !exp.description.trim() ? "border-destructive" : ""}`}
                           value={exp.description}
                           onChange={(e) =>
                             updateExperience(
@@ -698,25 +850,40 @@ const saveResumeToDB = async () => {
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <Label>Project Title</Label>
-                                        <Input value={proj.title} onChange={(e) => updateProject(proj.id, "title", e.target.value)} placeholder="E.g. E-commerce App" />
+                                        <Label>Project Title *</Label>
+                                        <Input 
+                                          value={proj.title} 
+                                          onChange={(e) => updateProject(proj.id, "title", e.target.value)} 
+                                          placeholder="E.g. E-commerce App" 
+                                          className={showValidationErrors && !proj.title.trim() ? "border-destructive" : ""}
+                                        />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label>Technologies (comma separated)</Label>
-                                        <Input value={proj.tech} onChange={(e) => updateProject(proj.id, "tech", e.target.value)} placeholder="React, Node.js, MongoDB" />
+                                        <Label>Technologies (comma separated) *</Label>
+                                        <Input 
+                                          value={proj.tech} 
+                                          onChange={(e) => updateProject(proj.id, "tech", e.target.value)} 
+                                          placeholder="React, Node.js, MongoDB" 
+                                          className={showValidationErrors && !proj.tech.trim() ? "border-destructive" : ""}
+                                        />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label>Date / Duration</Label>
-                                        <Input value={proj.date} onChange={(e) => updateProject(proj.id, "date", e.target.value)} placeholder="Jan 2024 - Mar 2024" />
+                                        <Label>Date / Duration *</Label>
+                                        <Input 
+                                          value={proj.date} 
+                                          onChange={(e) => updateProject(proj.id, "date", e.target.value)} 
+                                          placeholder="Jan 2024 - Mar 2024" 
+                                          className={showValidationErrors && !proj.date.trim() ? "border-destructive" : ""}
+                                        />
                                     </div>
                                 </div>
                                 <div className="mt-4 space-y-2">
-                                    <Label>Description (Bulleted list)</Label>
+                                    <Label>Description (Bulleted list) *</Label>
                                     <Textarea 
                                         value={Array.isArray(proj.points) ? proj.points.join("\n") : proj.points} 
                                         onChange={(e) => updateProject(proj.id, "points", e.target.value.split("\n"))} 
                                         placeholder="• Developed feature X...\n• Optimized performance..."
-                                        className="min-h-[100px]"
+                                        className={`min-h-[100px] ${showValidationErrors && proj.points.every(p => !p.trim()) ? "border-destructive" : ""}`}
                                     />
                                 </div>
                             </div>
@@ -760,10 +927,11 @@ const saveResumeToDB = async () => {
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label>Institution</Label>
+                          <Label>Institution *</Label>
                           <Input
                             placeholder="University Name"
                             value={edu.institution}
+                            className={showValidationErrors && !edu.institution.trim() ? "border-destructive" : ""}
                             onChange={(e) =>
                               updateEducation(
                                 edu.id,
@@ -774,30 +942,33 @@ const saveResumeToDB = async () => {
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label>Degree</Label>
+                          <Label>Degree *</Label>
                           <Input
                             placeholder="Bachelor's, Master's, etc."
                             value={edu.degree}
+                            className={showValidationErrors && !edu.degree.trim() ? "border-destructive" : ""}
                             onChange={(e) =>
                               updateEducation(edu.id, "degree", e.target.value)
                             }
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label>Field of Study</Label>
+                          <Label>Field of Study *</Label>
                           <Input
                             placeholder="Computer Science"
                             value={edu.field}
+                            className={showValidationErrors && !edu.field.trim() ? "border-destructive" : ""}
                             onChange={(e) =>
                               updateEducation(edu.id, "field", e.target.value)
                             }
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label>Graduation Date</Label>
+                          <Label>Graduation Date *</Label>
                           <Input
                             placeholder="May 2022"
                             value={edu.graduationDate}
+                            className={showValidationErrors && !edu.graduationDate.trim() ? "border-destructive" : ""}
                             onChange={(e) =>
                               updateEducation(
                                 edu.id,
@@ -833,11 +1004,11 @@ const saveResumeToDB = async () => {
 
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="skills">Skills</Label>
+                    <Label htmlFor="skills">Skills *</Label>
                     <Textarea
                       id="skills"
                       placeholder="Enter your skills separated by commas (e.g., JavaScript, React, Node.js, Python, Project Management)"
-                      className="min-h-[150px]"
+                      className={`min-h-[150px] ${showValidationErrors && !skills.trim() ? "border-destructive" : ""}`}
                       value={skills}
                       onChange={(e) => setSkills(e.target.value)}
                     />
@@ -908,7 +1079,9 @@ const saveResumeToDB = async () => {
               </Button>
 
               {step < totalSteps ? (
-                <Button onClick={() => setStep(step + 1)}>
+                <Button 
+                  onClick={handleNext}
+                >
                   Next
                   <ArrowRight className="h-4 w-4 ml-2" />
                 </Button>
@@ -916,6 +1089,11 @@ const saveResumeToDB = async () => {
                 <div className="flex gap-3">
                   <Button
                     onClick={async () => {
+                      if (!isStepValid(step)) {
+                        showValidationToasts(step);
+                        setShowValidationErrors(true);
+                        return;
+                      }
                       const resumeId = await saveResumeToDB();
                       if (!resumeId) return;
 
