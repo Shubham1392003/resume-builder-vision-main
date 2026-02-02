@@ -28,10 +28,27 @@ export const tailorResume = async (resumeJson, jobDescription, role, company) =>
             },
         });
         const prompt = `
-      Act as an expert technical resume writer and career coach.
-      
-      Your task is to REWRITE and EXPAND the provided resume JSON to strictly target the following Job Description.
-      The goal is to create a detailed, high-quality "2-Page Resume" that looks impressive and completely tailored.
+      Act as an expert ATS resume writer and recruiter assistant.
+
+      Your task is to generate a COMPLETE, ATS-OPTIMIZED, JOB-TARGETED resume
+      even when the user provides INCOMPLETE, VAGUE, OR MISSING INFORMATION.
+
+      IMPORTANT CONSTRAINTS:
+      - Do NOT invent companies, job titles, degrees, or certifications.
+      - You MAY intelligently infer responsibilities, skills, tools, and exposure based on:
+        • Job title
+        • Education background
+        • Projects
+        • Target Job Description
+      - All content must remain realistic, ethical, and defensible.
+
+      PRIMARY OBJECTIVE:
+      Make the resume appear COMPLETE, RELEVANT, and STRONG for ATS screening
+      by aligning it tightly with the TARGET JOB DESCRIPTION.
+
+      SECONDARY OBJECTIVE:
+      Ensure every section contributes keywords and relevance,
+      even if the user input is minimal.
 
       TARGET ROLE: ${role || "Software Engineer"}
       TARGET COMPANY: ${company || "Tech Company"}
@@ -41,30 +58,70 @@ export const tailorResume = async (resumeJson, jobDescription, role, company) =>
       ORIGINAL RESUME JSON:
       ${JSON.stringify(resumeJson)}
 
-      INSTRUCTIONS:
-      1. **EXPANSION & HALLUCINATION (CRITICAL)**: The goal is a **2-PAGE RESUME**.
-          - **Input Data**: The input JSON might be sparse or missing sections (like projects).
-          - **MISSING DATA**: If 'projects' or 'experience' are empty or weak, **YOU MUST INVENT** realistic, complex, high-impact entries relevant to the target role.
-          - **Projects**: If missing, INVENT 2-3 complex projects (e.g., "AI-Powered Analysis Tool", "E-commerce Microservices"). Write 4-5 bullet points per project.
-          - **Experience**: Write 5-7 detailed bullet points for EACH role. Each bullet must be 2-3 lines long.
-          - **Add Detail**: Don't just say "Built X". Say "Designed and implemented scalable X using [Tech A, Tech B], handling [Metric] traffic and reducing latency by [Metric]%."
+      RESUME ENHANCEMENT RULES:
+
+      1️⃣ EXPERIENCE SECTION (If empty or weak)
+      - If experience descriptions are missing or minimal:
+        → Generate 3–5 bullet points per role
+        → Use industry-standard responsibilities from the job description
+        → Phrase using:
+           "Assisted in…"
+           "Contributed to…"
+           "Worked on…"
+           "Hands-on experience with…"
+      - Focus on SKILLS, TOOLS, WORKFLOWS, and IMPACT
+      - Never claim leadership or ownership unless explicitly stated
+      - **FORMATTING**: 'experience' must be an ARRAY of objects. Each object MUST have a \`description\` field.
+          - \`description\`: This MUST be a STRING containing bullet points separated by newlines (\`\\n\`). OR an ARRAY of strings. (PREFER ARRAY of strings if possible, or newline separated string).
+
+      2️⃣ EDUCATION SECTION (If only college/degree is provided)
+      - Add:
+        • Relevant coursework aligned to the job
+        • Academic or practical exposure
+        • Technical skills gained
+      - If projects are relevant, reference them here
+
+      3️⃣ PROJECTS SECTION (If only 1 project exists or descriptions are weak)
+      - Expand project descriptions using:
+        • Problem statement
+        • Technologies used
+        • Features implemented
+        • Skills demonstrated
+      - If user projects are insufficient:
+        → Create 1–2 ROLE-ALIGNED PRACTICE PROJECTS
+        → Clearly frame them as:
+           "Academic Project", "Self-Directed Project", or "Practical Implementation"
+      - **FORMATTING**: 'projects' Must be an array. Each object MUST have a \`title\`, \`tech\` (string), and \`points\` (array of strings).
+         - \`points\`: Must be an ARRAY of strings. Do not return a single string.
+
+      4️⃣ SKILLS SECTION (ATS Critical)
+      - Extract REQUIRED SKILLS from the job description
+      - Map them to:
+        • Experience
+        • Projects
+        • Education
+      - Group skills into:
+        • Programming Languages
+        • Frameworks & Tools
+        • Databases
+        • AI / ML / Domain Skills
+      - Use exact keyword phrasing from the job description where possible
+      - **FORMATTING**: 'skills' MUST be an Object where keys are Categories (e.g., "Languages", "Frameworks") and values are comma-separated strings.
+          - Example: { "Languages": "Python, Java", "Backend": "Node.js, Django" }
+
+      5️⃣ ACHIEVEMENTS & LEADERSHIP
+      - Convert certifications, participation, or roles into impact-driven statements
+      - Avoid vague soft-skill-only bullets
       
-      2. **FORMATTING & STRUCTURE (STRICT)**:
-          - **'experience'**: Must be an ARRAY of objects. Each object MUST have a \`description\` field.
-              - \`description\`: This MUST be a STRING containing bullet points separated by newlines (\`\\n\`). OR an ARRAY of strings. (PREFER ARRAY of strings if possible, or newline separated string). 
-          - **'skills'**: MUST be an Object where keys are Categories (e.g., "Languages", "Frameworks") and values are comma-separated strings.
-              - Example: { "Languages": "Python, Java", "Backend": "Node.js, Django" }
-          - **'projects'**: Must be an array. Each object MUST have a \`title\`, \`tech\` (string), and \`points\` (array of strings).
-             - \`points\`: Must be an ARRAY of strings. Do not return a single string.
+      6️⃣ LANGUAGE & FORMAT
+      - Use strong action verbs
+      - Use ATS-friendly bullet points
+      - Avoid first-person pronouns
+      - Ensure keyword density WITHOUT stuffing
+      - Target 1.5–2 pages of content compatible with the provided JSON structure.
 
-      3. **TAILORING**:
-          - Inject keywords from the Job Description naturally.
-          - Rephrase content to match the target role.
-
-      4. **TONE**: Professional, high-impact, engineering-focused. Use numbers (%, x10, $5M+) everywhere.
-
-      RETURN ONLY VALID JSON. 
-      Ensure \`experience[].description\` is formatted correctly for LaTeX parsing (newline separated bullets).
+      RETURN ONLY VALID JSON matching the original structure logic.
+      Ensure \`experience[].description\` is formatted correctly for LaTeX parsing (newline separated bullets or array).
     `;
 
         const completion = await client.chat.completions.create({
