@@ -40,6 +40,7 @@ export const tailorResume = async (resumeJson, jobDescription, role, company) =>
         • Education background
         • Projects
         • Target Job Description
+      - **EXCEPTION**: If \`company\` or \`position\` fields are MISSING in the input, you MAY infer logical generic headers (e.g., "Independent Project", "University", "Freelance", "Self-Employed") to prevent empty headers.
       - All content must remain realistic, ethical, and defensible.
 
       PRIMARY OBJECTIVE:

@@ -419,6 +419,14 @@ const saveResumeToDB = async () => {
           return;
         }
         for (const exp of experiences) {
+          if (!exp.company.trim()) {
+            toast.error("Please provide a company name for all experience entries");
+            return;
+          }
+          if (!exp.position.trim()) {
+            toast.error("Please provide a position for all experience entries");
+            return;
+          }
           if (!exp.description.trim()) {
             toast.error("Please provide a description for all experience entries");
             return;
@@ -489,7 +497,11 @@ const saveResumeToDB = async () => {
                  personalInfo.location.trim() && 
                  personalInfo.summary.trim());
       case 2:
-        return experiences.length > 0 && experiences.every(exp => exp.description.trim());
+        return experiences.length > 0 && experiences.every(exp => 
+          exp.company.trim() && 
+          exp.position.trim() && 
+          exp.description.trim()
+        );
       case 3:
         return projects.length > 0 && projects.every(proj => 
           proj.title.trim() && 
@@ -745,9 +757,10 @@ const saveResumeToDB = async () => {
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label>Company</Label>
+                          <Label>Company *</Label>
                           <Input
                             placeholder="Company Name"
+                            className={showValidationErrors && !exp.company.trim() ? "border-destructive" : ""}
                             value={exp.company}
                             onChange={(e) =>
                               updateExperience(
@@ -759,9 +772,10 @@ const saveResumeToDB = async () => {
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label>Position</Label>
+                          <Label>Position *</Label>
                           <Input
                             placeholder="Job Title"
+                            className={showValidationErrors && !exp.position.trim() ? "border-destructive" : ""}
                             value={exp.position}
                             onChange={(e) =>
                               updateExperience(
